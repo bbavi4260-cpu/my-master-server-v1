@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const app = express();
 
-// 🛡️ मिडलवेयर सेटअप (डेटा रीड और सिक्योरिटी के लिए)
+// 🛡️ मिडलवेयर सेटअप
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🌐 1. होम रूट (Health Check) - चेक करने के लिए कि सर्वर चालू है या नहीं
+// 🌐 1. होम रूट (Health Check)
 app.get('/', (req, res) => {
     res.status(200).json({
         success: true,
@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
     });
 });
 
-// 👤 2. इन-ऐप डायरेक्ट लॉगिन एपीआई एंडपॉइंट (Secure Direct Login API)
+// 👤 2. इन-ऐप डायरेक्ट लॉगिन एपीआई एंडपॉइंट
 app.post('/api/v1/auth/login', (req, res) => {
     const { username, password } = req.body;
 
@@ -40,7 +40,7 @@ app.post('/api/v1/auth/login', (req, res) => {
         });
     }
 
-    // टेस्ट के लिए रैंडम प्लेयर आईडी और सेशन टोकन जेनरेट करें
+    // टेस्ट के लिए यूनीक प्लेयर आईडी और सेशन टोकन जेनरेट करें
     const userId = Math.floor(100000 + Math.random() * 900000);
     const token = crypto.randomBytes(32).toString('hex');
 
@@ -59,7 +59,7 @@ app.post('/api/v1/auth/login', (req, res) => {
     });
 });
 
-// 🚏 3. कैच-ऑल 404 फॉलबैक (अगर कोई गलत रास्ता रिक्वेस्ट करे)
+// 🚏 3. कैच-ऑल 404 फॉलबैक (यह लाइन हमेशा एंडपॉइंट्स के नीचे होनी चाहिए)
 app.use((req, res) => {
     console.log(`[⚠️ 404 Not Found]: ${req.method} ${req.path}`);
     res.status(404).json({
@@ -68,7 +68,7 @@ app.use((req, res) => {
     });
 });
 
-// 🚀 सर्वर पोर्ट सेटिंग्स (रेंडर ऑटोमैटिकली PORT एनवायरनमेंट वेरिएबल देता है)
+// 🚀 सर्वर पोर्ट सेटिंग्स
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`=============================================`);
