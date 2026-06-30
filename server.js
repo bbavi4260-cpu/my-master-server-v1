@@ -17,11 +17,14 @@ app.use((req, res, next) => {
 
 // 👤 1. गेस्ट रजिस्ट्रेशन एंडपॉइंट
 app.all('/oauth/guest/register', (req, res) => {
+    // वर्तमान समय से 1 वर्ष आगे का टाइमस्टैम्प (Seconds में) ताकि टोकन कभी एक्सपायर न हो
+    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    
     return res.status(200).json({
         "open_id": "100000001",
         "access_token": "GUEST_TOKEN_1782793628",
         "refresh_token": "GUEST_TOKEN_1782793628",
-        "expiry_time": 1814329628,
+        "expiry_time": dynamicExpiry,
         "platform": 4,
         "uid": "100000001",
         "ret": 0,
@@ -31,10 +34,12 @@ app.all('/oauth/guest/register', (req, res) => {
 
 // 🔑 2. गेस्ट टोकन ग्रांट
 app.post('/oauth/guest/token/grant', (req, res) => {
+    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    
     return res.status(200).json({
         "access_token": "MASTER_GRANTED_TOKEN_555666",
-        "refresh_token": "MASTER_REFRESH_TOKEN_555666",
-        "expiry_time": 1814329628,
+        "refresh_token": "MASTER_GRANTED_TOKEN_555666",
+        "expiry_time": dynamicExpiry,
         "uid": "100000001",
         "open_id": "100000001",
         "ret": 0,
@@ -42,18 +47,20 @@ app.post('/oauth/guest/token/grant', (req, res) => {
     });
 });
 
-// 🔍 3. टोकन इंस्पेक्शन (ठीक आपके असली गेम फ़ॉर्मेट के अनुसार)
+// 🔍 3. टोकन इंस्पेक्शन (डायनामिक टाइमस्टैम्प के साथ अपडेटेड)
 app.get('/oauth/token/inspect', (req, res) => {
-    console.log(`[🔍 TOKEN INSPECT] Matching exact production layout from Vercel.`);
+    console.log(`[🔍 TOKEN INSPECT] Generating fresh dynamic expiry time to fix re-login loop.`);
     
-    // वर्सेल लिंक से मिला बिल्कुल सटीक और असली रिस्पॉन्स ढांचा
+    // हमेशा भविष्य का समय भेजेगा ताकि गेम कभी "Token Expire" न कह सके
+    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    
     return res.status(200).json({
         "open_id": "100000001",
         "access_token": "MASTER_GRANTED_TOKEN_555666",
         "refresh_token": "MASTER_GRANTED_TOKEN_555666",
-        "expiry_time": 1814333424,
+        "expiry_time": dynamicExpiry,
         "platform": 1,
-        "is_valid": 1, // नंबर फ़ॉर्मेट में वैलिडेशन स्टेटस
+        "is_valid": 1,
         "ret": 0,
         "msg": "success"
     });
@@ -66,7 +73,7 @@ app.get('/oauth/login', (req, res) => {
     return res.redirect(targetUrl);
 });
 
-// 🎯 5. कैच-ऑल राऊटर (बाकी सभी आगामी रिक्वेस्ट्स को सीधे 'success' देने के लिए)
+// 🎯 5. कैच-ऑल राऊटर
 app.all('*', (req, res) => {
     console.log(`[🎯 CATCH-ALL] Handled unknown path: ${req.path}`);
     res.status(200).json({
@@ -80,6 +87,6 @@ app.all('*', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Master Server V5 (Exact Vercel Layout) running on port ${PORT}`);
+    console.log(`🚀 Master Server V6 (Dynamic Token Fix) running on port ${PORT}`);
 });
 
