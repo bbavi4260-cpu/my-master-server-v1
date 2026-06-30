@@ -42,11 +42,8 @@ app.post('/oauth/guest/token/grant', (req, res) => {
     });
 });
 
-// 🔍 3. नया रूट: टोकन इंस्पेक्शन (लॉग्स के अनुसार इसी पर गेम रुका हुआ है)
+// 🔍 3. टोकन इंस्पेक्शन
 app.get('/oauth/token/inspect', (req, res) => {
-    console.log(`[🔍 TOKEN INSPECT] Verifying token for the game client.`);
-    
-    // गेम इंजन को टोकन एक्टिव दिखाने के लिए आवश्यक स्ट्रक्चर
     return res.status(200).json({
         "ret": 0,
         "msg": "success",
@@ -57,7 +54,7 @@ app.get('/oauth/token/inspect', (req, res) => {
             "access_token": "MASTER_GRANTED_TOKEN_555666",
             "expires_in": 86400,
             "application_id": "100138",
-            "is_valid": true // यह गेम को बताएगा कि टोकन सही है
+            "is_valid": true
         }
     });
 });
@@ -69,9 +66,31 @@ app.get('/oauth/login', (req, res) => {
     return res.redirect(targetUrl);
 });
 
-// 👤 5. यूज़र इन्फो (प्रोफाइल डेटा)
+// 🖥️ 5. नया रूट: सर्वर लिस्ट और मेंटेनेंस बायपास (Fixes "Server will be ready soon")
+app.all(['/server/list', '/api/server/list', '/v1/server/list'], (req, res) => {
+    console.log(`[🖥️ SERVER LIST] Sending active game server coordinates.`);
+    return res.status(200).json({
+        "ret": 0,
+        "msg": "success",
+        "maintenance": false, // यह गेम को बताएगा कि मेंटेनेंस नहीं चल रहा है
+        "data": {
+            "servers": [
+                {
+                    "server_id": 1,
+                    "server_name": "Master Production Server",
+                    "ip": "198.1.195.198",
+                    "port": 8080,
+                    "status": "smooth", // या "online"
+                    "is_recommend": true
+                }
+            ],
+            "recommend_server_id": 1
+        }
+    });
+});
+
+// 👤 6. यूज़र इन्फो (प्रोफाइल डेटा)
 app.all('/oauth/user/info/get', (req, res) => {
-    console.log(`[👤 USER INFO] Sending lobby profile data.`);
     return res.status(200).json({
         "ret": 0,
         "msg": "success",
@@ -85,19 +104,22 @@ app.all('/oauth/user/info/get', (req, res) => {
     });
 });
 
-// 🎯 6. कैच-ऑल राऊटर
+// 🎯 7. कैच-ऑल राऊटर
 app.all('*', (req, res) => {
     console.log(`[🎯 CATCH-ALL] Handled unknown path: ${req.path}`);
     res.status(200).json({
         "ret": 0,
         "msg": "success",
         "error_code": 0,
-        "data": {}
+        "data": {
+            "maintenance": false,
+            "status": "online"
+        }
     });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Master Server V3 (Token Inspect Fix) running on port ${PORT}`);
+    console.log(`🚀 Master Server Fixed for Lobby Entry running on port ${PORT}`);
 });
 
