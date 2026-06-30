@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// किसी भी रिक्वेस्ट के आने पर उसे टर्मिनल में प्रिंट करने के लिए मिडिलवेयर
+// प्रत्येक रिक्वेस्ट को टर्मिनल में ट्रैक करने के लिए मिडिलवेयर
 app.use((req, res, next) => {
     console.log(`\n========================================`);
     console.log(`[⏰ ${new Date().toISOString()}] Incoming Request`);
@@ -17,11 +17,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// 👤 गेस्ट रजिस्ट्रेशन एंडपॉइंट (ठीक आपके फॉर्मेट के अनुसार)
+// 👤 1. गेस्ट रजिस्ट्रेशन एंडपॉइंट (Fixing Infinite Loading)
 app.all('/oauth/guest/register', (req, res) => {
-    console.log(`[👤 GUEST] Handling guest registration with exact required format.`);
+    console.log(`[👤 GUEST] Handling guest registration request.`);
     
-    // जो डेटा आपने वर्सेल लिंक से निकाला, वही यहाँ रिस्पॉन्स में जाएगा
+    // अनंत लोडिंग से बचने के लिए एक पूर्ण और सटीक रिस्पॉन्स स्ट्रक्चर
     return res.status(200).json({
         "open_id": "100000001",
         "access_token": "GUEST_TOKEN_1782793628",
@@ -30,19 +30,42 @@ app.all('/oauth/guest/register', (req, res) => {
         "platform": 4,
         "uid": "100000001",
         "ret": 0,
-        "msg": "success"
+        "msg": "success",
+        "error_code": 0, // कुछ SDKs इसे शून्य देखना चाहते हैं ताकि लोडिंग रुक सके
+        "data": {
+            "is_new_user": true
+        }
     });
 });
 
-// 🎯 कैच-ऑल राऊटर (Catch-All Route): 
-// ऊपर दिए गए रास्ते के अलावा बाकी कोई भी अनजान पाथ आए, तो उसे यह हैंडल करेगा
+// 🔑 2. नया लॉगिन एंडपॉइंट (फेसबुक या अन्य सोशल लॉगिन के लिए)
+app.all('/oauth/login', (req, res) => {
+    console.log(`[🔑 LOGIN] Handling main login route.`);
+    
+    // सोशल/फेसबुक लॉगिन को गेम के अंदर आगे बढ़ाने के लिए डमी टोकन रिस्पॉन्स
+    return res.status(200).json({
+        "open_id": "200000002",
+        "access_token": "LOGIN_TOKEN_987654321",
+        "refresh_token": "LOGIN_REFRESH_987654321",
+        "expiry_time": 1814329628,
+        "platform": 4,
+        "uid": "200000002",
+        "ret": 0,
+        "msg": "success",
+        "error_code": 0,
+        "data": {}
+    });
+});
+
+// 🎯 3. कैच-ऑल राऊटर (Catch-All Route)
+// ऊपर दिए गए राउट्स के अलावा बाकी कोई भी अनजान पाथ आए, तो उसे यह हैंडल करेगा
 app.all('*', (req, res) => {
     console.log(`[🎯 CATCH-ALL] Handled unknown path: ${req.path}`);
     
-    // सामान्य रिस्पॉन्स ताकि गेम का दूसरा कोई पाथ एरर न दे
     res.status(200).json({
         "ret": 0,
         "msg": "success",
+        "error_code": 0,
         "path": req.path,
         "data": {}
     });
@@ -51,6 +74,6 @@ app.all('*', (req, res) => {
 // सर्वर पोर्ट कॉन्फ़िगरेशन
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Master Server with Exact Guest Layout running on port ${PORT}`);
+    console.log(`🚀 Master Server Upgraded running on port ${PORT}`);
 });
 
