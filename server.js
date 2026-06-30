@@ -1,11 +1,10 @@
 const express = require('express');
-const https = require('https');
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// प्रत्येक रिक्वेस्ट को ट्रैक करने के लिए लॉगिंग मिडिलवेयर
+// लॉगिंग मिडिलवेयर
 app.use((req, res, next) => {
     console.log(`\n========================================`);
     console.log(`[⏰ ${new Date().toISOString()}] Incoming Request`);
@@ -17,74 +16,116 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🌐 1. फेसबुक/वेब लॉगिन बाईपास रूट
+// 🌐 1. फेसबुक और गेस्ट लॉगिन रूट (फ्रेश टोकन जनरेट करने के लिए)
 app.get('/oauth/login', (req, res) => {
-    console.log(`[🔵 LOGIN] Intercepting login redirect.`);
+    console.log(`[🔵 LOGIN] Processing Login Redirect.`);
     const redirectUri = req.query.redirect_uri || 'gop100138://auth/';
     const state = req.query.state || '';
     
-    // फ्रेश डायनामिक टोकन जनरेट करना ताकि सेशन एक्सपायर न हो
+    // हमेशा फ्रेश और लंबा एक्सपायरी टाइम ताकि सेशन एक्सपायर कभी न हो
     const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
-    const targetUrl = `${redirectUri}?code=master_auth_code_nexus&state=${state}&access_token=MASTER_LIVE_TOKEN_888&expiry_time=${dynamicExpiry}`;
+    const token = "NEXUS_MASTER_SECURE_TOKEN_9999";
     
-    console.log(`Redirecting back to game via: ${targetUrl}`);
+    const targetUrl = `${redirectUri}?code=nexus_auth_code&state=${state}&access_token=${token}&expiry_time=${dynamicExpiry}`;
     return res.redirect(targetUrl);
 });
 
-// 🔄 2. यूनिवर्सल लाइव प्रॉक्सी (लॉबी, सर्वर लिस्ट, टोकन इंस्पेक्ट - सब कुछ वर्सेल से लाइव लाएगा)
-app.all('*', (req, res) => {
-    console.log(`[🔄 PROXY] Routing ${req.path} directly to Vercel Production...`);
+// 🔍 2. टोकन इंस्पेक्शन रूट (रूट लेवल रिस्पॉन्स - नो लूप)
+app.all(['/oauth/token/inspect', '/token/inspect'], (req, res) => {
+    console.log(`[🔍 TOKEN INSPECT] Confirming valid token status.`);
+    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    
+    // वही टोकन रिफ्लेक्ट करना जो गेम एक्सपेक्ट कर रहा है
+    return res.status(200).json({
+        "open_id": "100000001",
+        "uid": "100000001",
+        "access_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
+        "refresh_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
+        "expiry_time": dynamicExpiry,
+        "platform": 1,
+        "is_valid": 1,
+        "ret": 0,
+        "msg": "success"
+    });
+});
 
-    // क्वेरी स्ट्रिंग का निर्माण
-    const queryString = Object.keys(req.query).length 
-        ? '?' + new URLSearchParams(req.query).toString() 
-        : '';
-        
-    const options = {
-        hostname: 'sgma-ten.vercel.app',
-        port: 443,
-        path: `${req.path}${queryString}`,
-        method: req.method,
-        headers: {
-            ...req.headers,
-            host: 'sgma-ten.vercel.app', // वर्सेल को ओरिजिनल होस्ट हेडर चाहिए
+// 🖥️ 3. सर्वर लिस्ट रूट (Fixes "Server will be ready soon")
+app.all(['/server/list', '/api/server/list', '/v1/server/list', '/game/server/list'], (req, res) => {
+    console.log(`[🖥️ SERVER LIST] Injecting active server configurations.`);
+    return res.status(200).json({
+        "ret": 0,
+        "msg": "success",
+        "maintenance": false, // मेंटेनेंस फॉल्स रखने से रेडी सून का एरर हट जाता है
+        "status": "online",
+        "data": {
+            "servers": [
+                {
+                    "server_id": 1,
+                    "server_name": "Nexus Master Official",
+                    "ip": "198.1.195.198",
+                    "port": 8080,
+                    "status": "smooth",
+                    "is_recommend": true
+                }
+            ],
+            "recommend_server_id": 1
         }
-    };
-
-    // असली सर्वर से डेटा कलेक्ट करना
-    const proxyReq = https.request(options, (proxyRes) => {
-        // अगर वर्सेल से टोकन रिस्पॉन्स आ रहा है, तो उसमें टाइमस्टैम्प को लाइव बढ़ा देना ताकि एक्सपायरी एरर न आये
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
-        proxyRes.pipe(res, { end: true });
     });
+});
 
-    proxyReq.on('error', (err) => {
-        console.error(`[❌ PROXY CRITICAL ERROR]:`, err.message);
-        
-        // बैकअप रिस्पॉन्स (अगर वर्सेल कभी रिस्पॉन्स न दे पाए तो गेम क्रैश नहीं होगा)
-        const backupExpiry = Math.floor(Date.now() / 1000) + 31536000;
-        res.status(200).json({
-            "open_id": "100000001",
+// 👤 4. यूजर प्रोफाइल डेटा रूट (लॉबी स्क्रीन लोड करने के लिए)
+app.all(['/oauth/user/info/get', '/user/info', '/api/user/profile'], (req, res) => {
+    console.log(`[👤 USER INFO] Initializing player assets for lobby.`);
+    return res.status(200).json({
+        "ret": 0,
+        "msg": "success",
+        "data": {
             "uid": "100000001",
-            "access_token": "MASTER_LIVE_TOKEN_888",
-            "refresh_token": "MASTER_LIVE_TOKEN_888",
-            "expiry_time": backupExpiry,
-            "platform": 1,
-            "is_valid": 1,
-            "ret": 0,
-            "msg": "success"
-        });
+            "open_id": "100000001",
+            "nickname": "Master_Nexus",
+            "level": 99,
+            "gold": 9999999,
+            "diamond": 999999,
+            "avatar": "1"
+        }
     });
+});
 
-    // अगर गेम कोई डेटा (POST/PUT बॉडी) भेज रहा है, तो उसे भी वर्सेल को फॉरवर्ड करें
-    if (req.method === 'POST' || req.method === 'PUT') {
-        proxyReq.write(JSON.stringify(req.body));
-    }
-    proxyReq.end();
+// 🎮 5. गेम रिक्वेस्ट/सिस्टम इनिट रूट
+app.all(['/game/user/request/send', '/game/init', '/api/config'], (req, res) => {
+    console.log(`[🎮 GAME INIT] Responding to engine handshakes.`);
+    return res.status(200).json({
+        "ret": 0,
+        "msg": "success",
+        "data": {
+            "status": "active",
+            "lobby_server": "connected",
+            "matchmaking": "ready"
+        }
+    });
+});
+
+// 🎯 6. कैच-ऑल राऊटर (अगर गेम कोई और नया गुप्त पाथ भी खोजे, तो उसे भी सीधा सक्सेस दें)
+app.all('*', (req, res) => {
+    console.log(`[🎯 CATCH-ALL] Auto-approving path: ${req.path}`);
+    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    res.status(200).json({
+        "ret": 0,
+        "msg": "success",
+        "error_code": 0,
+        "maintenance": false,
+        "status": "online",
+        "open_id": "100000001",
+        "uid": "100000001",
+        "access_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
+        "expiry_time": dynamicExpiry,
+        "is_valid": 1,
+        "data": {}
+    });
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`🎯 100000% Solution Server Live on port ${PORT}`);
+    console.log(`🚀 Independent Nexus Solution Live on port ${PORT}`);
 });
 
