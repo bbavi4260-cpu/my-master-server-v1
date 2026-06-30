@@ -4,7 +4,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// लॉगिंग मिडिलवेयर
+// प्रत्येक इनकमिंग रिक्वेस्ट को ट्रैक करने के लिए लॉगिंग मिडिलवेयर
 app.use((req, res, next) => {
     console.log(`\n========================================`);
     console.log(`[⏰ ${new Date().toISOString()}] Incoming Request`);
@@ -16,31 +16,50 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🌐 1. फेसबुक और गेस्ट लॉगिन रूट (फ्रेश टोकन जनरेट करने के लिए)
+// 📱 1. ओरिजिनल ऐप इन्फो गेट (Fixes Game Initial Check)
+app.all(['/app/info/get', '/api/app/info/get'], (req, res) => {
+    console.log(`[📱 APP INFO] Sending realistic Nexus-Sigma app structure.`);
+    return res.status(200).json({
+        "ret": 0,
+        "result": 0,
+        "msg": "success",
+        "data": {
+            "app_id": 100067,
+            "app_name": "Sigma",
+            "status": 1, // 1 = Active Server
+            "update_url": "",
+            "version": "1.0.0"
+        },
+        "client_log": false,
+        "overlay_config_url": "https://sgma-ten.vercel.app/rct/ver.php"
+    });
+});
+
+// 🌐 2. रियलिस्टिक लॉगिन और ऑथेंटिकेशन रीडायरेक्ट
 app.get('/oauth/login', (req, res) => {
-    console.log(`[🔵 LOGIN] Processing Login Redirect.`);
+    console.log(`[🔵 LOGIN] Processing authentication code and token issuance.`);
     const redirectUri = req.query.redirect_uri || 'gop100138://auth/';
     const state = req.query.state || '';
     
-    // हमेशा फ्रेश और लंबा एक्सपायरी टाइम ताकि सेशन एक्सपायर कभी न हो
+    // हमेशा भविष्य का फ्रेश टाइमस्टैम्प ताकि टोकन कभी एक्सपायर न हो
     const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
-    const token = "NEXUS_MASTER_SECURE_TOKEN_9999";
+    const secureToken = "NEXUS_MASTER_REALISTIC_TOKEN_2026";
     
-    const targetUrl = `${redirectUri}?code=nexus_auth_code&state=${state}&access_token=${token}&expiry_time=${dynamicExpiry}`;
+    const targetUrl = `${redirectUri}?code=master_nexus_code&state=${state}&access_token=${secureToken}&expiry_time=${dynamicExpiry}`;
+    console.log(`Redirecting back to app client: ${targetUrl}`);
     return res.redirect(targetUrl);
 });
 
-// 🔍 2. टोकन इंस्पेक्शन रूट (रूट लेवल रिस्पॉन्स - नो लूप)
+// 🔍 3. टोकन इंस्पेक्शन (Fixes "Session has expired" Error)
 app.all(['/oauth/token/inspect', '/token/inspect'], (req, res) => {
-    console.log(`[🔍 TOKEN INSPECT] Confirming valid token status.`);
+    console.log(`[🔍 TOKEN INSPECT] Matching strict client-token layout.`);
     const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
     
-    // वही टोकन रिफ्लेक्ट करना जो गेम एक्सपेक्ट कर रहा है
     return res.status(200).json({
         "open_id": "100000001",
         "uid": "100000001",
-        "access_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
-        "refresh_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
+        "access_token": "NEXUS_MASTER_REALISTIC_TOKEN_2026",
+        "refresh_token": "NEXUS_MASTER_REALISTIC_TOKEN_2026",
         "expiry_time": dynamicExpiry,
         "platform": 1,
         "is_valid": 1,
@@ -49,20 +68,20 @@ app.all(['/oauth/token/inspect', '/token/inspect'], (req, res) => {
     });
 });
 
-// 🖥️ 3. सर्वर लिस्ट रूट (Fixes "Server will be ready soon")
+// 🖥️ 4. एक्टिव सर्वर लिस्ट (Fixes "The server will be ready soon" Loop)
 app.all(['/server/list', '/api/server/list', '/v1/server/list', '/game/server/list'], (req, res) => {
-    console.log(`[🖥️ SERVER LIST] Injecting active server configurations.`);
+    console.log(`[🖥️ SERVER LIST] Bypassing maintenance status for active lobby access.`);
     return res.status(200).json({
         "ret": 0,
         "msg": "success",
-        "maintenance": false, // मेंटेनेंस फॉल्स रखने से रेडी सून का एरर हट जाता है
+        "maintenance": false, // False रखने से गेम सर्वर को ऑनलाइन मानता है
         "status": "online",
         "data": {
             "servers": [
                 {
                     "server_id": 1,
-                    "server_name": "Nexus Master Official",
-                    "ip": "198.1.195.198",
+                    "server_name": "Nexus Private Production",
+                    "ip": "127.0.0.1",
                     "port": 8080,
                     "status": "smooth",
                     "is_recommend": true
@@ -73,59 +92,57 @@ app.all(['/server/list', '/api/server/list', '/v1/server/list', '/game/server/li
     });
 });
 
-// 👤 4. यूजर प्रोफाइल डेटा रूट (लॉबी स्क्रीन लोड करने के लिए)
+// 👤 5. रियल प्लेयर असेट्स और लाइव स्कोर डेटा (अपडेटेड वैल्यूज)
 app.all(['/oauth/user/info/get', '/user/info', '/api/user/profile'], (req, res) => {
-    console.log(`[👤 USER INFO] Initializing player assets for lobby.`);
+    console.log(`[👤 USER INFO] Injecting custom score and currency assets into lobby.`);
     return res.status(200).json({
         "ret": 0,
         "msg": "success",
         "data": {
             "uid": "100000001",
             "open_id": "100000001",
-            "nickname": "Master_Nexus",
-            "level": 99,
-            "gold": 9999999,
-            "diamond": 999999,
-            "avatar": "1"
+            "nickname": "Master_Sigma",
+            "level": 99,              // आपका फुल लेवल
+            "gold": 9999999,          // मैक्सिमम गोल्ड
+            "diamond": 999999,        // अनलिमिटेड डायमंड्स
+            "score": 75000,           // 👈 आपका नया अपडेटेड स्कोर!
+            "rank_score": 4800,       // ग्रैंडमास्टर रैंक स्कोर
+            "avatar": "1",
+            "exp": 999999
         }
     });
 });
 
-// 🎮 5. गेम रिक्वेस्ट/सिस्टम इनिट रूट
-app.all(['/game/user/request/send', '/game/init', '/api/config'], (req, res) => {
-    console.log(`[🎮 GAME INIT] Responding to engine handshakes.`);
+// 🎮 6. गेम इंजन हैंडशेक और कॉन्फ़िगरेशन
+app.all(['/game/init', '/api/config', '/api/v1/login/notice'], (req, res) => {
+    console.log(`[🎮 GAME INIT] Responding to realistic engine notice/configs.`);
     return res.status(200).json({
         "ret": 0,
         "msg": "success",
         "data": {
             "status": "active",
-            "lobby_server": "connected",
-            "matchmaking": "ready"
+            "notice": "Welcome to Nexus Private Server, Master!",
+            "lobby_server": "connected"
         }
     });
 });
 
-// 🎯 6. कैच-ऑल राऊटर (अगर गेम कोई और नया गुप्त पाथ भी खोजे, तो उसे भी सीधा सक्सेस दें)
+// 🎯 7. यूनिवर्सल कैच-ऑल राऊटर (प्राइवेट सर्वर को कभी क्रैश न होने देने के लिए)
 app.all('*', (req, res) => {
-    console.log(`[🎯 CATCH-ALL] Auto-approving path: ${req.path}`);
-    const dynamicExpiry = Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60);
+    console.log(`[🎯 CATCH-ALL] Handled missing endpoint safely: ${req.path}`);
     res.status(200).json({
         "ret": 0,
         "msg": "success",
-        "error_code": 0,
         "maintenance": false,
         "status": "online",
-        "open_id": "100000001",
-        "uid": "100000001",
-        "access_token": "NEXUS_MASTER_SECURE_TOKEN_9999",
-        "expiry_time": dynamicExpiry,
-        "is_valid": 1,
         "data": {}
     });
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`🚀 Independent Nexus Solution Live on port ${PORT}`);
+    console.log(`\n🔥 ==================================================`);
+    console.log(`🚀 REALISTIC NEXUS PRIVATE SERVER LIVE ON PORT ${PORT}`);
+    console.log(`=====================================================\n`);
 });
 
