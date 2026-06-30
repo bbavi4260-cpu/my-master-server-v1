@@ -31,6 +31,28 @@ app.post('/oauth/guest/register', (req, res) => {
     });
 });
 
+
+// गेम के फेसबुक लॉगिन रिक्वेस्ट को संभालने के लिए डमी एंडपॉइंट
+app.post('/oauth/facebook/login', (req, res) => {
+    console.log(`\n[📱 FACEBOOK LOGIN REQUEST]`);
+    console.log(`Data Received:`, req.body);
+
+    // बिना किसी असली डेटा या पासवर्ड के, गेम को आगे बढ़ाने के लिए डमी टोकन भेजना
+    return res.status(200).json({
+        status: "success",
+        auth_provider: "facebook",
+        access_token: "dummy_facebook_access_token_xyz987",
+        user_info: {
+            user_id: "fb_user_test_654321", // डमी यूज़र आईडी
+            name: "Master Tester",           // डमी नाम
+            email: "master_test@example.com"
+        }
+    });
+});
+
+
+
+
 // 🎯 कैच-ऑल राऊटर (Catch-All Route): 
 // ऊपर दिए गए राउट्स के अलावा बाकी सभी अनजान राउट्स को यह हैंडल करेगा
 app.all('*', (req, res) => {
