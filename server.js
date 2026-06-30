@@ -86,6 +86,17 @@ app.all('*', (req, res) => {
     });
 });
 
+
+// एक्सप्रेस को बताएं कि public फोल्डर में हमारी HTML फाइल है
+app.use(express.static('public'));
+
+// डिफ़ॉल्ट रूट पर index.html सर्व करें
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Master Server V7 (Session Fix) running on port ${PORT}`);
