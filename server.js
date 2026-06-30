@@ -4,7 +4,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// लॉगिंग मिडिलवेयर
+// प्रत्येक इनकमिंग रिक्वेस्ट को ट्रैक करने के लिए मिडिलवेयर
 app.use((req, res, next) => {
     console.log(`\n========================================`);
     console.log(`[⏰ ${new Date().toISOString()}] Incoming Request`);
@@ -15,7 +15,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// 👤 1. गेस्ट रजिस्ट्रेशन
+// 👤 1. गेस्ट रजिस्ट्रेशन एंडपॉइंट
 app.all('/oauth/guest/register', (req, res) => {
     return res.status(200).json({
         "open_id": "100000001",
@@ -42,20 +42,20 @@ app.post('/oauth/guest/token/grant', (req, res) => {
     });
 });
 
-// 🔍 3. टोकन इंस्पेक्शन
+// 🔍 3. टोकन इंस्पेक्शन (ठीक आपके असली गेम फ़ॉर्मेट के अनुसार)
 app.get('/oauth/token/inspect', (req, res) => {
+    console.log(`[🔍 TOKEN INSPECT] Matching exact production layout from Vercel.`);
+    
+    // वर्सेल लिंक से मिला बिल्कुल सटीक और असली रिस्पॉन्स ढांचा
     return res.status(200).json({
+        "open_id": "100000001",
+        "access_token": "MASTER_GRANTED_TOKEN_555666",
+        "refresh_token": "MASTER_GRANTED_TOKEN_555666",
+        "expiry_time": 1814333424,
+        "platform": 1,
+        "is_valid": 1, // नंबर फ़ॉर्मेट में वैलिडेशन स्टेटस
         "ret": 0,
-        "msg": "success",
-        "error_code": 0,
-        "data": {
-            "uid": "100000001",
-            "open_id": "100000001",
-            "access_token": "MASTER_GRANTED_TOKEN_555666",
-            "expires_in": 86400,
-            "application_id": "100138",
-            "is_valid": true
-        }
+        "msg": "success"
     });
 });
 
@@ -66,60 +66,20 @@ app.get('/oauth/login', (req, res) => {
     return res.redirect(targetUrl);
 });
 
-// 🖥️ 5. नया रूट: सर्वर लिस्ट और मेंटेनेंस बायपास (Fixes "Server will be ready soon")
-app.all(['/server/list', '/api/server/list', '/v1/server/list'], (req, res) => {
-    console.log(`[🖥️ SERVER LIST] Sending active game server coordinates.`);
-    return res.status(200).json({
-        "ret": 0,
-        "msg": "success",
-        "maintenance": false, // यह गेम को बताएगा कि मेंटेनेंस नहीं चल रहा है
-        "data": {
-            "servers": [
-                {
-                    "server_id": 1,
-                    "server_name": "Master Production Server",
-                    "ip": "198.1.195.198",
-                    "port": 8080,
-                    "status": "smooth", // या "online"
-                    "is_recommend": true
-                }
-            ],
-            "recommend_server_id": 1
-        }
-    });
-});
-
-// 👤 6. यूज़र इन्फो (प्रोफाइल डेटा)
-app.all('/oauth/user/info/get', (req, res) => {
-    return res.status(200).json({
-        "ret": 0,
-        "msg": "success",
-        "data": {
-            "uid": "100000001",
-            "nickname": "Master_Player",
-            "level": 50,
-            "gold": 999999,
-            "diamond": 99999
-        }
-    });
-});
-
-// 🎯 7. कैच-ऑल राऊटर
+// 🎯 5. कैच-ऑल राऊटर (बाकी सभी आगामी रिक्वेस्ट्स को सीधे 'success' देने के लिए)
 app.all('*', (req, res) => {
     console.log(`[🎯 CATCH-ALL] Handled unknown path: ${req.path}`);
     res.status(200).json({
         "ret": 0,
         "msg": "success",
-        "error_code": 0,
-        "data": {
-            "maintenance": false,
-            "status": "online"
-        }
+        "open_id": "100000001",
+        "uid": "100000001",
+        "is_valid": 1
     });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Master Server Fixed for Lobby Entry running on port ${PORT}`);
+    console.log(`🚀 Master Server V5 (Exact Vercel Layout) running on port ${PORT}`);
 });
 
