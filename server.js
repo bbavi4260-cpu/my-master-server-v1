@@ -1,5 +1,5 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER BACKEND (VER.PHP COMPLETE FIX)
+ * 🚀 SIGMA PRIVATE SERVER BACKEND (VER.PHP HANDSHAKE FIX)
  */
 
 const express = require('express');
@@ -16,9 +16,6 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Content-Type', 'application/json');
-
-    if (req.method === 'OPTIONS') return res.status(200).end();
     next();
 });
 
@@ -33,7 +30,7 @@ const getTimestamp = () => Math.floor(Date.now() / 1000);
 const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
 // ==========================================
-// 1. RCT & VERSION HANDSHAKE (EXACT FIX FOR LOADING STUCK)
+// 1. RCT & VERSION HANDSHAKE (RESOLVES RETRY LOOP)
 // ==========================================
 app.all([
     '/rct', 
@@ -44,6 +41,16 @@ app.all([
     '/rct/ver'
 ], (req, res) => {
     const hostUrl = getHostUrl(req);
+    const clientVer = req.query.version || "1.0.0";
+
+    // Standard Plaintext Version format for older client hooks
+    if (req.headers['accept'] && req.headers['accept'].includes('text/plain')) {
+        res.setHeader('Content-Type', 'text/plain');
+        return res.status(200).send(`code=0\nmsg=success\nis_server_open=1\nis_maintenance=0\nremote_version=${clientVer}\ncdn_url=${hostUrl}/\nserver_url=${hostUrl}/\n`);
+    }
+
+    // JSON Version Handshake
+    res.setHeader('Content-Type', 'application/json');
     return res.status(200).json({
         "code": 0,
         "ret": 0,
@@ -53,8 +60,8 @@ app.all([
         "is_server_open": true,
         "is_firewall_open": true,
         "is_maintenance": false,
-        "remote_version": "1.0.0",
-        "client_version": "1.0.0",
+        "remote_version": clientVer,
+        "client_version": clientVer,
         "cdn_url": `${hostUrl}/`,
         "server_url": `${hostUrl}/`,
         "country_code": "IN",
@@ -64,7 +71,7 @@ app.all([
         "data": {
             "is_server_open": true,
             "is_maintenance": false,
-            "version": "1.0.0"
+            "version": clientVer
         }
     });
 });
@@ -73,6 +80,7 @@ app.all([
 // 2. TOKEN INSPECT & VERIFICATION
 // ==========================================
 app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
     const uid = "100000001";
@@ -119,6 +127,7 @@ app.all([
         return res.redirect(`${redirect}?code=${token}&access_token=${token}`);
     }
 
+    res.setHeader('Content-Type', 'application/json');
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -153,6 +162,7 @@ app.all([
     '/client_init',
     '/get_region_list'
 ], (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -187,6 +197,7 @@ app.all([
     '/lobby/info',
     '/api/v1/major_info'
 ], (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
     const hostDomain = req.get('host');
     return res.status(200).json({
         "error": 0,
@@ -229,6 +240,7 @@ app.all([
 // ==========================================
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
+    res.setHeader('Content-Type', 'application/json');
     const hostDomain = req.get('host');
     const now = getTimestamp();
 
