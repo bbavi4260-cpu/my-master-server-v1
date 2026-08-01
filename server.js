@@ -1,17 +1,18 @@
 /**
- * 🚀 NEXUS-SIGMA BEETALK MSDK COMPATIBLE SERVER
- * Synced directly with Lcom/beetalk/sdk/p smali routes
+ * 🚀 SIGMA BEETALK MSDK SERVER (RENDER FULL EDITION)
+ * Optimized for Render Free/Paid Web Services & Node.js 18+
  */
 
 const express = require('express');
 const cors = require('cors');
+
 const app = express();
 
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors());
 
-// Global CORS & Bypass
+// Global CORS Header Bypass
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "*");
@@ -20,9 +21,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Live Traffic Logger
+// Request Logger
 app.use((req, res, next) => {
-    console.log(`\n📡 [BEETALK HIT] ➔ ${new Date().toISOString()}`);
+    console.log(`\n📡 [RENDER HIT] ➔ ${new Date().toISOString()}`);
     console.log(`🔌 METHOD : ${req.method} | PATH : ${req.path}`);
     if (Object.keys(req.query).length) console.log(`🔍 QUERY  :`, JSON.stringify(req.query));
     if (Object.keys(req.body).length) console.log(`📦 BODY   :`, JSON.stringify(req.body));
@@ -30,20 +31,8 @@ app.use((req, res, next) => {
     next();
 });
 
+// Helpers
 const MASTER_TOKEN = "NEXUS_OFFICIAL_SECURE_TOKEN_VALID_2026_PRODUCTION_MATRIX";
-
-const NEXUS_DB = {
-    app_config: { app_id: 100067, app_name: "Sigma Private Server", version: "5.131", status: 1 },
-    player_profile: {
-        uid: "100000001",
-        open_id: "op_100000001",
-        nickname: "Master_Sigma",
-        level: 99,
-        gold: 9999999,
-        diamond: 999999,
-        region: "IND"
-    }
-};
 
 const getDynamicTime = () => {
     const current = Math.floor(Date.now() / 1000);
@@ -55,17 +44,39 @@ const getHostDomain = (req) => req.get('host');
 const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
 // ==========================================
-// 1. BEETALK APP CONFIG & VER (Smali: b())
+// 1. GLOBAL METADATA DIRECT RCT ROUTE (Hex Edit Support)
+// ==========================================
+app.all(['/rct', '/rct/', '/rct/*'], (req, res) => {
+    const hostUrl = getHostUrl(req);
+    console.log(`🎯 [RCT ROUTE HIT] Global Metadata Handshake`);
+    
+    return res.status(200).json({
+        "code": 0,
+        "msg": "success",
+        "is_server_open": true,
+        "is_firewall_open": true,
+        "remote_version": "5.131",
+        "cdn_url": `${hostUrl}/`,
+        "server_url": `${hostUrl}/`,
+        "country_code": "IN",
+        "sigma_login": true,
+        "sigma_switch": true,
+        "overlay_config_url": `${hostUrl}/rct/ver.php`
+    });
+});
+
+// ==========================================
+// 2. BEETALK APP CONFIG & VER (Smali: b())
 // ==========================================
 app.all(['/app/info/get', '/api/app/info/get'], (req, res) => {
     const hostUrl = getHostUrl(req);
     return res.status(200).json({
         "ret": 0, "result": 0, "msg": "success",
         "data": { 
-            "app_id": NEXUS_DB.app_config.app_id, 
-            "app_name": NEXUS_DB.app_config.app_name, 
-            "status": NEXUS_DB.app_config.status, 
-            "version": NEXUS_DB.app_config.version 
+            "app_id": 100067, 
+            "app_name": "Sigma Private Server", 
+            "status": 1, 
+            "version": "5.131" 
         },
         "overlay_config_url": `${hostUrl}/rct/ver.php`
     });
@@ -75,22 +86,22 @@ app.all(['/rct/ver.php', '/ver.php'], (req, res) => {
     const hostUrl = getHostUrl(req);
     return res.status(200).json({
         "code": 0, "is_server_open": true, "is_firewall_open": true, 
-        "remote_version": NEXUS_DB.app_config.version,
+        "remote_version": "5.131",
         "cdn_url": `${hostUrl}/`, "server_url": `${hostUrl}/`, "country_code": "IN", 
         "sigma_login": true, "sigma_switch": true
     });
 });
 
 // ==========================================
-// 2. BEETALK GUEST REGISTER (Smali: H())
+// 3. BEETALK GUEST REGISTER (Smali: H())
 // ==========================================
 app.all(['/oauth/guest/register', '/guest/register'], (req, res) => {
     const times = getDynamicTime();
     return res.status(200).json({
         "ret": 0, "result": true, "msg": "success", "is_valid": 1,
-        "open_id": NEXUS_DB.player_profile.open_id, 
-        "uid": NEXUS_DB.player_profile.uid, 
-        "user_id": NEXUS_DB.player_profile.uid,
+        "open_id": "op_100000001", 
+        "uid": "100000001", 
+        "user_id": "100000001",
         "access_token": MASTER_TOKEN, 
         "refresh_token": MASTER_TOKEN,
         "create_time": times.current, 
@@ -101,16 +112,16 @@ app.all(['/oauth/guest/register', '/guest/register'], (req, res) => {
 });
 
 // ==========================================
-// 3. BEETALK TOKEN INSPECT & REFRESH (Smali: K(), L())
+// 4. BEETALK TOKEN INSPECT & REFRESH (Smali: K(), L())
 // ==========================================
 app.all(['/oauth/token/inspect', '/oauth/token/refresh', '/token/inspect'], (req, res) => {
     const times = getDynamicTime();
     const inboundToken = req.query.access_token || req.body.access_token || MASTER_TOKEN;
     return res.status(200).json({
         "ret": 0, "result": true, "error_code": 0, "msg": "success",
-        "open_id": NEXUS_DB.player_profile.open_id, 
-        "uid": NEXUS_DB.player_profile.uid, 
-        "user_id": NEXUS_DB.player_profile.uid,
+        "open_id": "op_100000001", 
+        "uid": "100000001", 
+        "user_id": "100000001",
         "access_token": inboundToken, 
         "refresh_token": inboundToken,
         "create_time": times.current, 
@@ -121,35 +132,37 @@ app.all(['/oauth/token/inspect', '/oauth/token/refresh', '/token/inspect'], (req
 });
 
 // ==========================================
-// 4. BEETALK USER PROFILE (Smali: M())
+// 5. BEETALK USER PROFILE (Smali: M())
 // ==========================================
 app.all(['/oauth/user/info/get', '/user/info'], (req, res) => {
+    const uid = req.query.uid || req.body.uid || "100000001";
+
     return res.status(200).json({
         "ret": 0, "result": true, "msg": "success",
         "data": {
-            "uid": NEXUS_DB.player_profile.uid, 
-            "user_id": NEXUS_DB.player_profile.uid, 
-            "open_id": NEXUS_DB.player_profile.open_id,
-            "nickname": NEXUS_DB.player_profile.nickname, 
-            "level": NEXUS_DB.player_profile.level,
-            "gold": NEXUS_DB.player_profile.gold, 
-            "diamond": NEXUS_DB.player_profile.diamond
+            "uid": uid, 
+            "user_id": uid, 
+            "open_id": `op_${uid}`,
+            "nickname": "Master_Sigma", 
+            "level": 99,
+            "gold": 9999999, 
+            "diamond": 999999
         },
-        "info": { "user_id": NEXUS_DB.player_profile.uid, "nickname": NEXUS_DB.player_profile.nickname, "region": "IN" }
+        "info": { "user_id": uid, "nickname": "Master_Sigma", "region": "IND" }
     });
 });
 
 // ==========================================
-// 5. MAJOR INFO & SERVER LIST (Tap To Begin Fix)
+// 6. MAJOR INFO & SERVER LIST (LOBBY ENGINE)
 // ==========================================
 app.all(['/major_info', '/api/major_info', '/major_info/get'], (req, res) => {
     const hostDomain = getHostDomain(req);
     return res.status(200).json({
         "ret": 0, "result": true, "msg": "success",
         "data": {
-            "uid": NEXUS_DB.player_profile.uid,
-            "nickname": NEXUS_DB.player_profile.nickname,
-            "region": NEXUS_DB.player_profile.region,
+            "uid": "100000001",
+            "nickname": "Master_Sigma",
+            "region": "IND",
             "lobby_ip": hostDomain,
             "lobby_port": 443,
             "chat_ip": hostDomain,
@@ -174,7 +187,7 @@ app.all(['/server/list', '/api/server/list'], (req, res) => {
 });
 
 // ==========================================
-// 6. BEETALK OTHER AUXILIARY ENDPOINTS (c, d, J, D, E, F, G)
+// 7. BEETALK AUXILIARY ROUTES
 // ==========================================
 app.all([
     '/oauth/logout',
@@ -192,24 +205,24 @@ app.all([
 });
 
 // ==========================================
-// 7. UNIVERSAL FALLBACK FOR ANY UNHANDLED ROUTE
+// 8. CATCH-ALL FALLBACK ROUTE
 // ==========================================
 app.all('*', (req, res) => {
     const times = getDynamicTime();
     const hostDomain = getHostDomain(req);
     return res.status(200).json({
         "ret": 0, "result": true, "msg": "success", "is_valid": 1,
-        "open_id": NEXUS_DB.player_profile.open_id, 
-        "uid": NEXUS_DB.player_profile.uid, 
-        "user_id": NEXUS_DB.player_profile.uid,
+        "open_id": "op_100000001", 
+        "uid": "100000001", 
+        "user_id": "100000001",
         "access_token": MASTER_TOKEN, 
         "refresh_token": MASTER_TOKEN,
         "create_time": times.current, 
         "expiry_time": times.expiry, 
         "expires_in": 31536000,
         "data": {
-            "uid": NEXUS_DB.player_profile.uid,
-            "nickname": NEXUS_DB.player_profile.nickname,
+            "uid": "100000001",
+            "nickname": "Master_Sigma",
             "lobby_server": "connected",
             "lobby_ip": hostDomain,
             "lobby_port": 443
@@ -217,7 +230,8 @@ app.all('*', (req, res) => {
     });
 });
 
+// Render dynamic PORT assignment
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`\n🔥 BEETALK SYNCED SERVER ONLINE ON PORT: ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🔥 RENDER SIGMA SERVER ACTIVE ON PORT: ${PORT}`);
 });
