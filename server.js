@@ -1,5 +1,5 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER - FULL LOBBY & GATEWAY BACKEND
+ * 🚀 SIGMA PRIVATE SERVER BACKEND (VER.PHP COMPLETE FIX)
  */
 
 const express = require('express');
@@ -32,26 +32,46 @@ app.use((req, res, next) => {
 const getTimestamp = () => Math.floor(Date.now() / 1000);
 const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
-// 1. RCT & VERSION HANDSHAKE
-app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
+// ==========================================
+// 1. RCT & VERSION HANDSHAKE (EXACT FIX FOR LOADING STUCK)
+// ==========================================
+app.all([
+    '/rct', 
+    '/rct/', 
+    '/rct/*', 
+    '/rct/ver.php', 
+    '/ver.php',
+    '/rct/ver'
+], (req, res) => {
     const hostUrl = getHostUrl(req);
     return res.status(200).json({
         "code": 0,
         "ret": 0,
+        "status": 0,
         "msg": "success",
+        "result": true,
         "is_server_open": true,
         "is_firewall_open": true,
-        "remote_version": "5.131",
+        "is_maintenance": false,
+        "remote_version": "1.0.0",
+        "client_version": "1.0.0",
         "cdn_url": `${hostUrl}/`,
         "server_url": `${hostUrl}/`,
         "country_code": "IN",
         "sigma_login": true,
         "sigma_switch": true,
-        "overlay_config_url": `${hostUrl}/rct/ver.php`
+        "overlay_config_url": `${hostUrl}/rct/ver.php`,
+        "data": {
+            "is_server_open": true,
+            "is_maintenance": false,
+            "version": "1.0.0"
+        }
     });
 });
 
+// ==========================================
 // 2. TOKEN INSPECT & VERIFICATION
+// ==========================================
 app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
@@ -78,7 +98,9 @@ app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
     });
 });
 
+// ==========================================
 // 3. BEETALK AUTH & GUEST GRANT
+// ==========================================
 app.all([
     '/oauth/guest/token/grant',
     '/oauth/guest/register', 
@@ -120,7 +142,9 @@ app.all([
     });
 });
 
+// ==========================================
 // 4. USER PROFILE & APP CONFIG
+// ==========================================
 app.all([
     '/oauth/user/info/get', 
     '/user/info', 
@@ -145,13 +169,15 @@ app.all([
             "gold": 9999999,
             "diamond": 999999,
             "status": 1,
-            "version": "5.131",
+            "version": "1.0.0",
             "region": "IND"
         }
     });
 });
 
-// 5. LOBBY SERVER & MAJOR INFO (EXACT RESPONSE STRUCTURE)
+// ==========================================
+// 5. LOBBY SERVER & MAJOR INFO
+// ==========================================
 app.all([
     '/major_info', 
     '/api/major_info', 
@@ -198,7 +224,9 @@ app.all([
     });
 });
 
+// ==========================================
 // 6. UNIVERSAL FALLBACK
+// ==========================================
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
@@ -235,7 +263,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server fully operational on port ${PORT}`);
 });
 
-// TCP Fallback Buffer
 server.on('connection', (socket) => {
     socket.on('data', () => {
         const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
