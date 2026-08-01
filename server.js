@@ -1,10 +1,11 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER BACKEND (AUTHENTICATION + LOBBY ROUTING FIX)
- * Designed for Render Web Services
+ * 🚀 SIGMA PRIVATE SERVER FULL STACK BACKEND
+ * (Handles HTTP Endpoints + TCP Socket Gateway for Lobby Entry)
  */
 
 const express = require('express');
 const cors = require('cors');
+const net = require('net');
 
 const app = express();
 
@@ -19,27 +20,22 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Content-Type', 'application/json');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
     next();
 });
 
 // Request Logger
 app.use((req, res, next) => {
-    console.log(`\n📥 [REQUEST] ${req.method} -> ${req.originalUrl}`);
+    console.log(`\n📥 [HTTP REQUEST] ${req.method} -> ${req.originalUrl}`);
     if (Object.keys(req.body).length) console.log(`📦 Body:`, JSON.stringify(req.body));
     next();
 });
 
 const getTimestamp = () => Math.floor(Date.now() / 1000);
-const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
-// ==========================================
-// 1. RCT & VERSION HANDSHAKE
-// ==========================================
+// 1. RCT / VERSION HANDSHAKE
 app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
-    const hostUrl = getHostUrl(req);
+    const hostUrl = `${req.protocol}://${req.get('host')}`;
     return res.status(200).json({
         "code": 0,
         "ret": 0,
@@ -56,9 +52,7 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
     });
 });
 
-// ==========================================
-// 2. BEETALK EXACT GUEST GRANT & AUTH
-// ==========================================
+// 2. BEETALK AUTH & GUEST GRANT
 app.all([
     '/oauth/guest/token/grant',
     '/oauth/guest/register', 
@@ -72,7 +66,6 @@ app.all([
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
     const uid = req.body.uid || "100000001";
-    const openId = "op_100000001";
 
     return res.status(200).json({
         "error": 0,
@@ -84,8 +77,8 @@ app.all([
         "account_id": uid,
         "uid": uid,
         "user_id": uid,
-        "open_id": openId,
-        "openid": openId,
+        "open_id": "op_100000001",
+        "openid": "op_100000001",
         "access_token": token,
         "refresh_token": token,
         "create_time": now,
@@ -97,9 +90,7 @@ app.all([
     });
 });
 
-// ==========================================
 // 3. USER PROFILE & APP CONFIG
-// ==========================================
 app.all([
     '/oauth/user/info/get', 
     '/user/info', 
@@ -130,9 +121,7 @@ app.all([
     });
 });
 
-// ==========================================
-// 4. LOBBY SERVER & MAJOR INFO (COMPLETE ROUTE)
-// ==========================================
+// 4. LOBBY SERVER & MAJOR INFO (DIRECT ENTRY BINDING)
 app.all([
     '/major_info', 
     '/api/major_info', 
@@ -154,21 +143,21 @@ app.all([
             "nickname": "Master_Sigma",
             "region": "IND",
             "lobby_ip": hostDomain,
-            "lobby_port": 443,
+            "lobby_port": 10000,
             "chat_ip": hostDomain,
-            "chat_port": 443,
+            "chat_port": 10000,
             "allow_login": 1,
             "is_ban": 0,
             "gate_server": {
                 "ip": hostDomain,
-                "port": 443
+                "port": 10000
             },
             "servers": [
                 {
                     "server_id": 1,
                     "server_name": "Nexus Core Server",
                     "ip": hostDomain,
-                    "port": 443,
+                    "port": 10000,
                     "status": "smooth",
                     "is_recommend": true
                 }
@@ -178,11 +167,9 @@ app.all([
     });
 });
 
-// ==========================================
-// 5. CATCH-ALL UNIVERSAL FALLBACK
-// ==========================================
+// 5. CATCH-ALL FALLBACK
 app.all('*', (req, res) => {
-    console.log(`⚠️ [LOBBY FALLBACK ACTION]: ${req.method} ${req.originalUrl}`);
+    console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
     const now = getTimestamp();
 
@@ -207,15 +194,21 @@ app.all('*', (req, res) => {
             "uid": "100000001",
             "nickname": "Master_Sigma",
             "lobby_ip": hostDomain,
-            "lobby_port": 443,
-            "chat_ip": hostDomain,
-            "chat_port": 443,
-            "allow_login": 1
+            "lobby_port": 10000
         }
     });
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server fully operational on port ${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 HTTP & Socket Gateway fully active on port ${PORT}`);
+});
+
+// TCP Gateway Handshake Handler (Socket Disconnect Fix)
+server.on('connection', (socket) => {
+    socket.on('data', (data) => {
+        // Echo Handshake ACK back to client to prevent "Network Error"
+        const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
+        socket.write(ackBuffer);
+    });
 });
