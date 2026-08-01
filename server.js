@@ -1,6 +1,6 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER BACKEND (COMPLETE FIX EDITION)
- * Designed for Render Web Services & Express.js
+ * 🚀 SIGMA PRIVATE SERVER BACKEND (EXACT BEETALK MSDK LOGIN FIX)
+ * Designed for Render Web Services
  */
 
 const express = require('express');
@@ -8,11 +8,9 @@ const cors = require('cors');
 
 const app = express();
 
-// Middleware: Body Parsers
+// Middlewares
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Middleware: Strict CORS & Response Headers Fix
 app.use(cors({ origin: '*', credentials: true }));
 
 app.use((req, res, next) => {
@@ -27,14 +25,13 @@ app.use((req, res, next) => {
     next();
 });
 
-// Middleware: Request Inspector (Render Console Logs)
+// Request Logger (Render Console में देखने के लिए)
 app.use((req, res, next) => {
     console.log(`\n📥 [REQUEST] ${req.method} -> ${req.originalUrl}`);
     if (Object.keys(req.body).length) console.log(`📦 Body:`, JSON.stringify(req.body));
     next();
 });
 
-// Helper Functions
 const getTimestamp = () => Math.floor(Date.now() / 1000);
 const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
@@ -60,27 +57,43 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
 });
 
 // ==========================================
-// 2. BEETALK AUTHENTICATION & GUEST LOGIN
+// 2. BEETALK / GARENA AUTH & GUEST LOGIN (EXACT MSDK FORMAT)
 // ==========================================
-app.all(['/oauth/guest/register', '/guest/register', '/oauth/token/inspect', '/oauth/token/refresh'], (req, res) => {
+app.all([
+    '/oauth/guest/register', 
+    '/guest/register', 
+    '/oauth/access_token',
+    '/oauth/token/inspect', 
+    '/oauth/token/refresh',
+    '/oauth/login',
+    '/oauth/grant'
+], (req, res) => {
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
+    const uid = "100000001";
+    const openId = "op_100000001";
 
+    // MSDK expects this exact payload structure
     return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
         "ret": 0,
         "result": true,
-        "code": 0,
+        "status": "success",
         "msg": "success",
-        "open_id": "op_100000001",
-        "uid": "100000001",
-        "user_id": "100000001",
+        "account_id": uid,
+        "uid": uid,
+        "user_id": uid,
+        "open_id": openId,
+        "openid": openId,
         "access_token": token,
         "refresh_token": token,
         "create_time": now,
         "expiry_time": now + 31536000,
         "expires_in": 31536000,
         "platform": 4,
-        "is_valid": 1
+        "is_valid": 1,
+        "session_key": token
     });
 });
 
@@ -89,6 +102,8 @@ app.all(['/oauth/guest/register', '/guest/register', '/oauth/token/inspect', '/o
 // ==========================================
 app.all(['/oauth/user/info/get', '/user/info', '/app/info/get', '/api/app/info/get'], (req, res) => {
     return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
         "ret": 0,
         "result": true,
         "code": 0,
@@ -113,6 +128,8 @@ app.all(['/oauth/user/info/get', '/user/info', '/app/info/get', '/api/app/info/g
 app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (req, res) => {
     const hostDomain = req.get('host');
     return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
         "ret": 0,
         "result": true,
         "code": 0,
@@ -144,23 +161,27 @@ app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (
 
 // ==========================================
 // 5. CATCH-ALL UNIVERSAL FALLBACK
-// (Gives positive response to any unknown endpoint requested by the client)
 // ==========================================
 app.all('*', (req, res) => {
-    console.log(`⚠️ [FALLBACK RESPONDED] Endpoint: ${req.method} ${req.originalUrl}`);
+    console.log(`⚠️ [FALLBACK RESPONDED]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
     const now = getTimestamp();
 
     return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
         "ret": 0,
         "result": true,
         "code": 0,
         "msg": "success",
+        "status": "success",
         "is_valid": 1,
         "open_id": "op_100000001",
+        "openid": "op_100000001",
         "uid": "100000001",
         "user_id": "100000001",
         "access_token": "NEXUS_MASTER_SECURE_TOKEN_2026",
+        "refresh_token": "NEXUS_MASTER_SECURE_TOKEN_2026",
         "create_time": now,
         "expires_in": 31536000,
         "data": {
@@ -172,7 +193,6 @@ app.all('*', (req, res) => {
     });
 });
 
-// Dynamic Port Binding for Render
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server fully operational on port ${PORT}`);
