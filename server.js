@@ -1,5 +1,5 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER BACKEND (EXACT BEETALK GRANT FIX)
+ * 🚀 SIGMA PRIVATE SERVER BACKEND (AUTHENTICATION + LOBBY ROUTING FIX)
  * Designed for Render Web Services
  */
 
@@ -57,7 +57,7 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
 });
 
 // ==========================================
-// 2. BEETALK EXACT GUEST GRANT ROUTE (CRITICAL FIX)
+// 2. BEETALK EXACT GUEST GRANT & AUTH
 // ==========================================
 app.all([
     '/oauth/guest/token/grant',
@@ -74,7 +74,6 @@ app.all([
     const uid = req.body.uid || "100000001";
     const openId = "op_100000001";
 
-    // Standard BeeTalk SDK Grant Response
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -101,7 +100,14 @@ app.all([
 // ==========================================
 // 3. USER PROFILE & APP CONFIG
 // ==========================================
-app.all(['/oauth/user/info/get', '/user/info', '/app/info/get', '/api/app/info/get'], (req, res) => {
+app.all([
+    '/oauth/user/info/get', 
+    '/user/info', 
+    '/app/info/get', 
+    '/api/app/info/get',
+    '/client_init',
+    '/get_region_list'
+], (req, res) => {
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -118,15 +124,23 @@ app.all(['/oauth/user/info/get', '/user/info', '/app/info/get', '/api/app/info/g
             "gold": 9999999,
             "diamond": 999999,
             "status": 1,
-            "version": "5.131"
+            "version": "5.131",
+            "region": "IND"
         }
     });
 });
 
 // ==========================================
-// 4. LOBBY & SERVER LIST ROUTING
+// 4. LOBBY SERVER & MAJOR INFO (COMPLETE ROUTE)
 // ==========================================
-app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (req, res) => {
+app.all([
+    '/major_info', 
+    '/api/major_info', 
+    '/major_info/get', 
+    '/server/list',
+    '/get_lobby_info',
+    '/lobby/info'
+], (req, res) => {
     const hostDomain = req.get('host');
     return res.status(200).json({
         "error": 0,
@@ -145,6 +159,10 @@ app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (
             "chat_port": 443,
             "allow_login": 1,
             "is_ban": 0,
+            "gate_server": {
+                "ip": hostDomain,
+                "port": 443
+            },
             "servers": [
                 {
                     "server_id": 1,
@@ -161,10 +179,10 @@ app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (
 });
 
 // ==========================================
-// 5. CATCH-ALL FALLBACK
+// 5. CATCH-ALL UNIVERSAL FALLBACK
 // ==========================================
 app.all('*', (req, res) => {
-    console.log(`⚠️ [FALLBACK RESPONDED]: ${req.method} ${req.originalUrl}`);
+    console.log(`⚠️ [LOBBY FALLBACK ACTION]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
     const now = getTimestamp();
 
@@ -189,7 +207,10 @@ app.all('*', (req, res) => {
             "uid": "100000001",
             "nickname": "Master_Sigma",
             "lobby_ip": hostDomain,
-            "lobby_port": 443
+            "lobby_port": 443,
+            "chat_ip": hostDomain,
+            "chat_port": 443,
+            "allow_login": 1
         }
     });
 });
