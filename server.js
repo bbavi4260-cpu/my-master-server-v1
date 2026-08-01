@@ -1,6 +1,6 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER - FINAL FIXED SERVER.JS
- * Fixes: /oauth/token/exchange, OAuth Redirects,RCT & Fallbacks
+ * 🚀 SIGMA PRIVATE SERVER - ZERO BUG FULL BACKEND
+ * Fixes: Token Exchange, RCT Handshake, Major Info, Header Mismatches & Socket Ack
  */
 
 const express = require('express');
@@ -8,33 +8,36 @@ const cors = require('cors');
 
 const app = express();
 
-// Global Crash Guard
+// Crash Handlers
 process.on('uncaughtException', (err) => {
     console.error('🔥 [CRASH PREVENTION] Uncaught Exception:', err);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
     console.error('🔥 [CRASH PREVENTION] Unhandled Rejection:', reason);
 });
 
-// Universal Middlewares
+// Middleware setup
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Force Headers & Handle OPTIONS Pre-flight
+// Strict Headers for Client Compatibility
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
     next();
 });
 
-// Universal Request Logger
+// Logging
 app.use((req, res, next) => {
     console.log(`\n📥 [HTTP REQUEST] ${req.method} -> ${req.originalUrl}`);
     if (req.body && Object.keys(req.body).length) {
@@ -64,11 +67,11 @@ app.all([
     const clientVer = req.query.version || "1.0.0";
 
     if (req.headers['accept'] && req.headers['accept'].includes('text/plain')) {
-        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         return res.status(200).send(`code=0\nmsg=success\nis_server_open=1\nis_maintenance=0\nremote_version=${clientVer}\ncdn_url=${hostUrl}/\nserver_url=${hostUrl}/\n`);
     }
 
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.status(200).json({
         "code": 0,
         "ret": 0,
@@ -95,9 +98,22 @@ app.all([
 });
 
 // ==========================================
-// 2. BEETALK AUTH & GUEST REGISTRATION
+// 2. BEETALK OAUTH LOGIN & REDIRECTS
+// ==========================================
+app.all(['/oauth/login'], (req, res) => {
+    const redirectUri = req.query.redirect_uri ? decodeURIComponent(req.query.redirect_uri) : 'gop100138://auth/';
+    const targetUrl = redirectUri.includes('?') 
+        ? `${redirectUri}&code=${MASTER_TOKEN}` 
+        : `${redirectUri}?code=${MASTER_TOKEN}`;
+    return res.redirect(targetUrl);
+});
+
+// ==========================================
+// 3. AUTH, GUEST GRANT & TOKEN EXCHANGE
 // ==========================================
 app.all([
+    '/oauth/token/exchange',
+    '/token/exchange',
     '/oauth/guest/token/grant',
     '/oauth/guest/register', 
     '/guest/register', 
@@ -114,51 +130,7 @@ app.all([
         return res.redirect(`${redirect}?code=${MASTER_TOKEN}&access_token=${MASTER_TOKEN}`);
     }
 
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json({
-        "error": 0,
-        "error_code": 0,
-        "ret": 0,
-        "result": true,
-        "status": "success",
-        "msg": "success",
-        "account_id": MASTER_UID,
-        "uid": MASTER_UID,
-        "user_id": MASTER_UID,
-        "open_id": "op_100000001",
-        "openid": "op_100000001",
-        "access_token": MASTER_TOKEN,
-        "refresh_token": MASTER_TOKEN,
-        "token_type": "Bearer",
-        "create_time": now,
-        "expiry_time": now + 31536000,
-        "expires_in": 31536000,
-        "platform": 4,
-        "is_valid": 1,
-        "session_key": MASTER_TOKEN,
-        "data": {
-            "uid": MASTER_UID,
-            "access_token": MASTER_TOKEN,
-            "open_id": "op_100000001"
-        }
-    });
-});
-
-// ==========================================
-// 3. OAUTH LOGIN & TOKEN EXCHANGE (THE MISSING FIX!)
-// ==========================================
-app.all(['/oauth/login'], (req, res) => {
-    const redirectUri = req.query.redirect_uri ? decodeURIComponent(req.query.redirect_uri) : 'gop100138://auth/';
-    const targetUrl = redirectUri.includes('?') 
-        ? `${redirectUri}&code=${MASTER_TOKEN}` 
-        : `${redirectUri}?code=${MASTER_TOKEN}`;
-    return res.redirect(targetUrl);
-});
-
-app.all(['/oauth/token/exchange', '/token/exchange'], (req, res) => {
-    const now = getTimestamp();
-    res.setHeader('Content-Type', 'application/json');
-
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -194,10 +166,11 @@ app.all(['/oauth/token/exchange', '/token/exchange'], (req, res) => {
 app.all([
     '/oauth/token/inspect', 
     '/oauth/inspect',
-    '/token/inspect'
+    '/token/inspect',
+    '/api/v1/token/inspect'
 ], (req, res) => {
     const now = getTimestamp();
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
     return res.status(200).json({
         "error": 0,
@@ -235,7 +208,7 @@ app.all([
     '/client_init',
     '/get_region_list'
 ], (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -270,7 +243,7 @@ app.all([
     '/lobby/info',
     '/api/v1/major_info'
 ], (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const hostDomain = req.get('host');
     return res.status(200).json({
         "error": 0,
@@ -312,8 +285,8 @@ app.all([
 // 7. UNIVERSAL FALLBACK CATCH-ALL
 // ==========================================
 app.all('*', (req, res) => {
-    console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
-    res.setHeader('Content-Type', 'application/json');
+    console.log(`⚠️ [FALLBACK HIT]: ${req.method} ${req.originalUrl}`);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const hostDomain = req.get('host');
     const now = getTimestamp();
 
@@ -352,6 +325,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 server.on('connection', (socket) => {
     socket.on('data', () => {
         try {
+            // Echo Handshake Back to keep TCP Socket alive
             const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
             socket.write(ackBuffer);
         } catch (e) {
