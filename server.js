@@ -1,6 +1,5 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER FULL STACK BACKEND
- * (OAuth Inspect Fix + HTTP & TCP Gateway)
+ * 🚀 SIGMA PRIVATE SERVER - FULL LOBBY & GATEWAY BACKEND
  */
 
 const express = require('express');
@@ -52,7 +51,7 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
     });
 });
 
-// 2. TOKEN INSPECT & VERIFICATION (CRITICAL FIX FOR LOBBY ENTRY)
+// 2. TOKEN INSPECT & VERIFICATION
 app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
@@ -79,7 +78,7 @@ app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
     });
 });
 
-// 3. BEETALK AUTH, GUEST GRANT & LOGIN REDIRECT
+// 3. BEETALK AUTH & GUEST GRANT
 app.all([
     '/oauth/guest/token/grant',
     '/oauth/guest/register', 
@@ -93,7 +92,6 @@ app.all([
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
     const uid = req.body.uid || "100000001";
 
-    // If game requests embedded login redirect
     if (req.query && req.query.redirect_uri) {
         const redirect = decodeURIComponent(req.query.redirect_uri);
         return res.redirect(`${redirect}?code=${token}&access_token=${token}`);
@@ -153,14 +151,15 @@ app.all([
     });
 });
 
-// 5. LOBBY SERVER & MAJOR INFO
+// 5. LOBBY SERVER & MAJOR INFO (EXACT RESPONSE STRUCTURE)
 app.all([
     '/major_info', 
     '/api/major_info', 
     '/major_info/get', 
     '/server/list',
     '/get_lobby_info',
-    '/lobby/info'
+    '/lobby/info',
+    '/api/v1/major_info'
 ], (req, res) => {
     const hostDomain = req.get('host');
     return res.status(200).json({
@@ -175,21 +174,21 @@ app.all([
             "nickname": "Master_Sigma",
             "region": "IND",
             "lobby_ip": hostDomain,
-            "lobby_port": 10000,
+            "lobby_port": 443,
             "chat_ip": hostDomain,
-            "chat_port": 10000,
+            "chat_port": 443,
             "allow_login": 1,
             "is_ban": 0,
             "gate_server": {
                 "ip": hostDomain,
-                "port": 10000
+                "port": 443
             },
             "servers": [
                 {
                     "server_id": 1,
                     "server_name": "Nexus Core Server",
                     "ip": hostDomain,
-                    "port": 10000,
+                    "port": 443,
                     "status": "smooth",
                     "is_recommend": true
                 }
@@ -199,7 +198,7 @@ app.all([
     });
 });
 
-// 6. CATCH-ALL UNIVERSAL FALLBACK
+// 6. UNIVERSAL FALLBACK
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
@@ -226,7 +225,7 @@ app.all('*', (req, res) => {
             "uid": "100000001",
             "nickname": "Master_Sigma",
             "lobby_ip": hostDomain,
-            "lobby_port": 10000
+            "lobby_port": 443
         }
     });
 });
@@ -236,7 +235,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server fully operational on port ${PORT}`);
 });
 
-// TCP Gateway Buffer Handling
+// TCP Fallback Buffer
 server.on('connection', (socket) => {
     socket.on('data', () => {
         const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
