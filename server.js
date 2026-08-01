@@ -1,11 +1,10 @@
 /**
  * 🚀 SIGMA PRIVATE SERVER FULL STACK BACKEND
- * (Handles HTTP Endpoints + TCP Socket Gateway for Lobby Entry)
+ * (OAuth Inspect Fix + HTTP & TCP Gateway)
  */
 
 const express = require('express');
 const cors = require('cors');
-const net = require('net');
 
 const app = express();
 
@@ -32,10 +31,11 @@ app.use((req, res, next) => {
 });
 
 const getTimestamp = () => Math.floor(Date.now() / 1000);
+const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
-// 1. RCT / VERSION HANDSHAKE
+// 1. RCT & VERSION HANDSHAKE
 app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
-    const hostUrl = `${req.protocol}://${req.get('host')}`;
+    const hostUrl = getHostUrl(req);
     return res.status(200).json({
         "code": 0,
         "ret": 0,
@@ -52,13 +52,39 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
     });
 });
 
-// 2. BEETALK AUTH & GUEST GRANT
+// 2. TOKEN INSPECT & VERIFICATION (CRITICAL FIX FOR LOBBY ENTRY)
+app.all(['/oauth/token/inspect', '/oauth/inspect'], (req, res) => {
+    const now = getTimestamp();
+    const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
+    const uid = "100000001";
+
+    return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
+        "ret": 0,
+        "result": true,
+        "status": "success",
+        "msg": "success",
+        "account_id": uid,
+        "uid": uid,
+        "user_id": uid,
+        "open_id": "op_100000001",
+        "openid": "op_100000001",
+        "access_token": token,
+        "app_id": 100138,
+        "platform": 4,
+        "is_valid": 1,
+        "expiry_time": now + 31536000,
+        "expires_in": 31536000
+    });
+});
+
+// 3. BEETALK AUTH, GUEST GRANT & LOGIN REDIRECT
 app.all([
     '/oauth/guest/token/grant',
     '/oauth/guest/register', 
     '/guest/register', 
     '/oauth/access_token',
-    '/oauth/token/inspect', 
     '/oauth/token/refresh',
     '/oauth/login',
     '/oauth/grant'
@@ -66,6 +92,12 @@ app.all([
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
     const uid = req.body.uid || "100000001";
+
+    // If game requests embedded login redirect
+    if (req.query && req.query.redirect_uri) {
+        const redirect = decodeURIComponent(req.query.redirect_uri);
+        return res.redirect(`${redirect}?code=${token}&access_token=${token}`);
+    }
 
     return res.status(200).json({
         "error": 0,
@@ -90,7 +122,7 @@ app.all([
     });
 });
 
-// 3. USER PROFILE & APP CONFIG
+// 4. USER PROFILE & APP CONFIG
 app.all([
     '/oauth/user/info/get', 
     '/user/info', 
@@ -121,7 +153,7 @@ app.all([
     });
 });
 
-// 4. LOBBY SERVER & MAJOR INFO (DIRECT ENTRY BINDING)
+// 5. LOBBY SERVER & MAJOR INFO
 app.all([
     '/major_info', 
     '/api/major_info', 
@@ -167,7 +199,7 @@ app.all([
     });
 });
 
-// 5. CATCH-ALL FALLBACK
+// 6. CATCH-ALL UNIVERSAL FALLBACK
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
     const hostDomain = req.get('host');
@@ -201,13 +233,12 @@ app.all('*', (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 HTTP & Socket Gateway fully active on port ${PORT}`);
+    console.log(`🚀 Server fully operational on port ${PORT}`);
 });
 
-// TCP Gateway Handshake Handler (Socket Disconnect Fix)
+// TCP Gateway Buffer Handling
 server.on('connection', (socket) => {
-    socket.on('data', (data) => {
-        // Echo Handshake ACK back to client to prevent "Network Error"
+    socket.on('data', () => {
         const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
         socket.write(ackBuffer);
     });
