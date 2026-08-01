@@ -1,6 +1,6 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER - ULTRA STABLE FULL BACKEND (ZERO-BUG)
- * Full Handshake, OAuth, RCT, User, Major Info & Global Crash Handling
+ * 🚀 SIGMA PRIVATE SERVER - FINAL FIXED SERVER.JS
+ * Fixes: /oauth/token/exchange, OAuth Redirects,RCT & Fallbacks
  */
 
 const express = require('express');
@@ -8,7 +8,7 @@ const cors = require('cors');
 
 const app = express();
 
-// Global Crash Guard (Prevents server from crashing on unexpected errors)
+// Global Crash Guard
 process.on('uncaughtException', (err) => {
     console.error('🔥 [CRASH PREVENTION] Uncaught Exception:', err);
 });
@@ -22,7 +22,7 @@ app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Force JSON Headers & Handle OPTIONS Pre-flight Globally
+// Force Headers & Handle OPTIONS Pre-flight
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
@@ -50,7 +50,7 @@ const MASTER_TOKEN = "NEXUS_MASTER_SECURE_TOKEN_2026";
 const MASTER_UID = "100000001";
 
 // ==========================================
-// 1. RCT & VERSION HANDSHAKE (RCT FIX)
+// 1. RCT & VERSION HANDSHAKE
 // ==========================================
 app.all([
     '/rct', 
@@ -95,7 +95,7 @@ app.all([
 });
 
 // ==========================================
-// 2. BEETALK AUTH, GUEST REGISTRATION & LOGIN
+// 2. BEETALK AUTH & GUEST REGISTRATION
 // ==========================================
 app.all([
     '/oauth/guest/token/grant',
@@ -103,7 +103,6 @@ app.all([
     '/guest/register', 
     '/oauth/access_token',
     '/oauth/token/refresh',
-    '/oauth/login',
     '/oauth/grant',
     '/login',
     '/guest_login'
@@ -146,7 +145,51 @@ app.all([
 });
 
 // ==========================================
-// 3. TOKEN INSPECT & VERIFICATION
+// 3. OAUTH LOGIN & TOKEN EXCHANGE (THE MISSING FIX!)
+// ==========================================
+app.all(['/oauth/login'], (req, res) => {
+    const redirectUri = req.query.redirect_uri ? decodeURIComponent(req.query.redirect_uri) : 'gop100138://auth/';
+    const targetUrl = redirectUri.includes('?') 
+        ? `${redirectUri}&code=${MASTER_TOKEN}` 
+        : `${redirectUri}?code=${MASTER_TOKEN}`;
+    return res.redirect(targetUrl);
+});
+
+app.all(['/oauth/token/exchange', '/token/exchange'], (req, res) => {
+    const now = getTimestamp();
+    res.setHeader('Content-Type', 'application/json');
+
+    return res.status(200).json({
+        "error": 0,
+        "error_code": 0,
+        "ret": 0,
+        "result": true,
+        "status": "success",
+        "msg": "success",
+        "account_id": MASTER_UID,
+        "uid": MASTER_UID,
+        "user_id": MASTER_UID,
+        "open_id": "op_100000001",
+        "openid": "op_100000001",
+        "access_token": MASTER_TOKEN,
+        "refresh_token": MASTER_TOKEN,
+        "token_type": "Bearer",
+        "create_time": now,
+        "expiry_time": now + 31536000,
+        "expires_in": 31536000,
+        "platform": 4,
+        "is_valid": 1,
+        "session_key": MASTER_TOKEN,
+        "data": {
+            "uid": MASTER_UID,
+            "access_token": MASTER_TOKEN,
+            "open_id": "op_100000001"
+        }
+    });
+});
+
+// ==========================================
+// 4. TOKEN INSPECT & VERIFICATION
 // ==========================================
 app.all([
     '/oauth/token/inspect', 
@@ -182,7 +225,7 @@ app.all([
 });
 
 // ==========================================
-// 4. USER PROFILE & APP CONFIG
+// 5. USER PROFILE & APP CONFIG
 // ==========================================
 app.all([
     '/oauth/user/info/get', 
@@ -216,7 +259,7 @@ app.all([
 });
 
 // ==========================================
-// 5. LOBBY SERVER & MAJOR INFO
+// 6. LOBBY SERVER & MAJOR INFO
 // ==========================================
 app.all([
     '/major_info', 
@@ -266,7 +309,7 @@ app.all([
 });
 
 // ==========================================
-// 6. UNIVERSAL FALLBACK CATCH-ALL
+// 7. UNIVERSAL FALLBACK CATCH-ALL
 // ==========================================
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK]: ${req.method} ${req.originalUrl}`);
@@ -300,24 +343,21 @@ app.all('*', (req, res) => {
     });
 });
 
-// Express Listener
+// Listener & TCP Socket Connection
 const PORT = process.env.PORT || 10000;
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server fully operational on port ${PORT}`);
 });
 
-// Socket Connection ACK Handler
 server.on('connection', (socket) => {
     socket.on('data', () => {
         try {
             const ackBuffer = Buffer.from([0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00]);
             socket.write(ackBuffer);
         } catch (e) {
-            console.error('Socket write error ignored:', e.message);
+            console.error('Socket error ignored:', e.message);
         }
     });
 
-    socket.on('error', (err) => {
-        // Prevent socket error from crashing process
-    });
+    socket.on('error', () => {});
 });
