@@ -1,5 +1,5 @@
 /**
- * 🚀 SIGMA PRIVATE SERVER BACKEND (EXACT BEETALK MSDK LOGIN FIX)
+ * 🚀 SIGMA PRIVATE SERVER BACKEND (EXACT BEETALK GRANT FIX)
  * Designed for Render Web Services
  */
 
@@ -25,7 +25,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Request Logger (Render Console में देखने के लिए)
+// Request Logger
 app.use((req, res, next) => {
     console.log(`\n📥 [REQUEST] ${req.method} -> ${req.originalUrl}`);
     if (Object.keys(req.body).length) console.log(`📦 Body:`, JSON.stringify(req.body));
@@ -36,7 +36,7 @@ const getTimestamp = () => Math.floor(Date.now() / 1000);
 const getHostUrl = (req) => `${req.protocol}://${req.get('host')}`;
 
 // ==========================================
-// 1. RCT & VERSION HANDSHAKE (Hex Edit Route)
+// 1. RCT & VERSION HANDSHAKE
 // ==========================================
 app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
     const hostUrl = getHostUrl(req);
@@ -57,9 +57,10 @@ app.all(['/rct', '/rct/', '/rct/*', '/rct/ver.php', '/ver.php'], (req, res) => {
 });
 
 // ==========================================
-// 2. BEETALK / GARENA AUTH & GUEST LOGIN (EXACT MSDK FORMAT)
+// 2. BEETALK EXACT GUEST GRANT ROUTE (CRITICAL FIX)
 // ==========================================
 app.all([
+    '/oauth/guest/token/grant',
     '/oauth/guest/register', 
     '/guest/register', 
     '/oauth/access_token',
@@ -70,10 +71,10 @@ app.all([
 ], (req, res) => {
     const now = getTimestamp();
     const token = "NEXUS_MASTER_SECURE_TOKEN_2026";
-    const uid = "100000001";
+    const uid = req.body.uid || "100000001";
     const openId = "op_100000001";
 
-    // MSDK expects this exact payload structure
+    // Standard BeeTalk SDK Grant Response
     return res.status(200).json({
         "error": 0,
         "error_code": 0,
@@ -160,7 +161,7 @@ app.all(['/major_info', '/api/major_info', '/major_info/get', '/server/list'], (
 });
 
 // ==========================================
-// 5. CATCH-ALL UNIVERSAL FALLBACK
+// 5. CATCH-ALL FALLBACK
 // ==========================================
 app.all('*', (req, res) => {
     console.log(`⚠️ [FALLBACK RESPONDED]: ${req.method} ${req.originalUrl}`);
